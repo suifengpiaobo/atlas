@@ -293,9 +293,10 @@ public class TPatchTool extends AbstractTool {
 
     public static Map<String,LinkedHashMap>bundleInfos = new HashMap<String, LinkedHashMap>();
 
+    private final Map<String, Map<String, ClassDef>> bundleClassMap
+        = new ConcurrentHashMap<String, Map<String, ClassDef>>();
 
-    private Map<String, Map<String, ClassDef>> bundleClassMap = new ConcurrentHashMap<String, Map<String, ClassDef>>();
-    private List<String> whiteList = new ArrayList<>();
+    private final List<String> whiteList = new ArrayList<>();
     
 
     private List<String> msgToString(List<Checker.ReasonMsg> msgs) {
@@ -532,7 +533,8 @@ public class TPatchTool extends AbstractTool {
             String relativePath = PathUtils.toRelative(newApkUnzipFolder,
                                                        retainFile.getAbsolutePath());
             File baseFile = new File(baseApkUnzipFolder, relativePath);
-            if (isFileModify(retainFile, baseFile)) {
+            if (isBundleFile(retainFile)) {
+            } else if (isFileModify(retainFile, baseFile)) {
                 resoureModified = true;
                 File destFile = new File(patchTmpDir, relativePath);
                 FileUtils.copyFile(retainFile, destFile);
