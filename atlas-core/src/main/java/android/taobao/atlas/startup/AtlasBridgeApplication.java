@@ -422,10 +422,12 @@ public class AtlasBridgeApplication extends Application{
         // 检测之前的版本记录
         SharedPreferences prefs = context.getSharedPreferences("atlas_configs", Context.MODE_PRIVATE);
         int lastVersionCode = prefs.getInt("last_version_code", 0);
+        String lastFingerprint = prefs.getString("last_fingerprint", "");
         String lastVersionName = prefs.getString("last_version_name", "");
         long lastupdatetime = prefs.getLong("lastupdatetime",-1);
-        if(packageInfo.versionCode==lastVersionCode && TextUtils.equals(packageInfo.versionName,
-                lastVersionName) && lastupdatetime==packageInfo.lastUpdateTime && !needRollback()){
+        if (packageInfo.versionCode == lastVersionCode && TextUtils.equals(packageInfo.versionName, lastVersionName)
+            && lastupdatetime == packageInfo.lastUpdateTime && TextUtils.equals(Build.FINGERPRINT, lastFingerprint)
+            && !needRollback()) {
             return false;
         }
 

@@ -374,6 +374,7 @@ public class Atlas {
         SharedPreferences prefs = mApplication.getSharedPreferences("atlas_configs", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
         editor.putInt("last_version_code", packageInfo.versionCode);
+        editor.putString("last_fingerprint", Build.FINGERPRINT);
         editor.putString("last_version_name", packageInfo.versionName);
         editor.putLong("lastupdatetime",packageInfo.lastUpdateTime);
         editor.commit();
