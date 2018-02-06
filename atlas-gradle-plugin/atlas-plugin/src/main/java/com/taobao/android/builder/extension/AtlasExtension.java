@@ -245,6 +245,16 @@ public class AtlasExtension<T extends TBuildType, Z extends TBuildConfig> {
     @Config(title = "是否启用atlas", message = "是否启用atlas , true/false", order = 0, group = "atlas")
     private boolean atlasEnabled;
 
+    public boolean isDexNew() {
+        return dexNew;
+    }
+
+    public void setDexNew(boolean dexNew) {
+        this.dexNew = dexNew;
+    }
+
+    private boolean dexNew;
+
     protected Project project;
 
     protected Logger logger;

@@ -212,6 +212,7 @@ package com.android.builder.core;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
@@ -276,6 +277,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.taobao.android.builder.AtlasBuildContext;
 import com.taobao.android.builder.extension.AtlasExtension;
+import com.taobao.android.builder.tasks.app.bundle.DexByteCodeConVerterHook;
 import com.taobao.android.builder.tools.FileNameUtils;
 import com.taobao.android.builder.tools.MD5Util;
 import com.taobao.android.builder.tools.Profiler;
@@ -288,6 +290,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.gradle.api.GradleException;
 import org.gradle.api.tasks.StopExecutionException;
+import org.gradle.internal.impldep.com.amazonaws.util.Md5Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -307,7 +310,10 @@ public class AtlasBuilder extends AndroidBuilder {
 
     public MultiDexer multiDexer;
 
+    public static final String TYPE= "pre-dex-1.0.1";
+
     protected AndroidBuilder defaultBuilder;
+    private boolean first = true;
 
     /**
      * Creates an AndroidBuilder.
@@ -905,6 +911,17 @@ public class AtlasBuilder extends AndroidBuilder {
                                 ProcessOutputHandler processOutputHandler, boolean awb)
         throws IOException, InterruptedException, ProcessException {
 
+        if (atlasExtension.isDexNew() && first) {
+            try {
+                Field f = AndroidBuilder.class.getDeclaredField("mDexByteCodeConverter");
+                f.setAccessible(true);
+                f.set(this, new DexByteCodeConVerterHook(getLogger(), getTargetInfo(), getJavaProcessExecutor(), true));
+                first = false;
+            } catch (Exception e) {
+
+            }
+        }
+
         Profiler.start();
 
         boolean fastMultiDex = null != multiDexer && !awb;
@@ -1068,15 +1085,23 @@ public class AtlasBuilder extends AndroidBuilder {
         if (!inputFile.getName().startsWith("combined")) {
 
             if (inputFile.isFile()) {
-                md5 = MD5Util.getFileMD5(inputFile);
+                try {
+                    md5 = MD5Util.getMD5(MD5Util.getFileMD5(inputFile)+atlasExtension.isDexNew());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             } else if (inputFile.isDirectory()) {
-                md5 = MD5Util.getFileMd5(FileUtils.listFiles(inputFile,
-                                                             new String[] {"class"},
-                                                             true));
+                try {
+                    md5 = MD5Util.getMD5(MD5Util.getFileMd5(FileUtils.listFiles(inputFile,
+                                                                 new String[] {"class"},
+                                                                 true))+atlasExtension.isDexNew());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
 
             if (StringUtils.isNotEmpty(md5)) {
-                AtlasBuildContext.sBuilderAdapter.fileCache.fetchFile(md5, dexFile, "pre-dex");
+                AtlasBuildContext.sBuilderAdapter.fileCache.fetchFile(md5, dexFile, TYPE);
                 if (dexFile.exists() && dexFile.length() > 0) {
                     sLogger.info("[mtldex] hit cache dex for {} , {}",
                                  inputFile.getAbsolutePath(),
@@ -1111,7 +1136,7 @@ public class AtlasBuilder extends AndroidBuilder {
         super.preDexLibrary(inputFile, outFile, multiDex, defaultDexOptions, processOutputHandler);
 
         if (StringUtils.isNotEmpty(md5) && dexFile.exists()) {
-            AtlasBuildContext.sBuilderAdapter.fileCache.cacheFile(md5, dexFile, "pre-dex");
+            AtlasBuildContext.sBuilderAdapter.fileCache.cacheFile(md5, dexFile, TYPE);
         }
     }
 
